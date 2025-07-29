@@ -4,9 +4,9 @@
  * @description Prevent accidental calls with call confirmations.
  * @author LancersBucket
  * @authorId 355477882082033664
- * @version 1.0.0
+ * @version 1.0.1
  * @source https://github.com/LancersBucket/CallConfirmations
- * @updateUrl https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/main/CallConfirmations.plugin.js
+ * @updateUrl https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/master/CallConfirmations.plugin.js
  */
 /*@cc_on
 @if (@_jscript)
@@ -28,7 +28,7 @@ const config = {
         version: '1.0.0',
         description: 'Prevent accidental calls with call confirmations.',
         github: 'https://github.com/LancersBucket/CallConfirmations',
-        github_raw: 'https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/main/CallConfirmations.plugin.js',
+        github_raw: 'https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/master/CallConfirmations.plugin.js',
     },
     defaultConfig: [
         {

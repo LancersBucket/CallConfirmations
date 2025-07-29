@@ -3,7 +3,7 @@ Have you ever accidently called a Group DM alerting 3+ friends of your heinous t
 
 By default, only Group DM confirmations are enabled, however, in the config, you can choose what types of confirmations you want enabled!
 
-![Screenshot](https://raw.githubusercontent.com/LancersBucket/CallConfirmations/main/_meta/thumbnail.png)
+![Screenshot](https://raw.githubusercontent.com/LancersBucket/CallConfirmations/master/_meta/thumbnail.png)
 
 ## Changelog
 See [CHANGELOG.md](./CHANGELOG.md) for details on version history.

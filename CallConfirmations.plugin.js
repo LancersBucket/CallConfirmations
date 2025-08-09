@@ -4,9 +4,8 @@
  * @description Prevent accidental calls with call confirmations.
  * @author LancersBucket
  * @authorId 355477882082033664
- * @version 1.0.1
+ * @version 1.0.2
  * @source https://github.com/LancersBucket/CallConfirmations
- * @updateUrl https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/master/CallConfirmations.plugin.js
  */
 /*@cc_on
 @if (@_jscript)
@@ -25,7 +24,7 @@ const config = {
                 github_username: 'LancersBucket'
             },
         ],
-        version: '1.0.0',
+        version: '1.0.2',
         description: 'Prevent accidental calls with call confirmations.',
         github: 'https://github.com/LancersBucket/CallConfirmations',
         github_raw: 'https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/master/CallConfirmations.plugin.js',
@@ -65,14 +64,7 @@ const config = {
                     name: 'Check for Updates',
                     note: 'Check for updates on startup.',
                     value: true,
-                },
-                {
-                    type: 'switch',
-                    id: 'debug',
-                    name: 'Enable Debugging',
-                    note: 'Enables debug output, which provides more verbose information.',
-                    value: false,
-                },
+                }
             ],
         }
     ],
@@ -84,82 +76,11 @@ module.exports = class CallConfirmations {
         this.meta = meta;
         this.api = new BdApi(this.meta.name);
         this.settings = this.api.Data.load('settings') || this.defaultSettings();
-        
-        // Get settingsVersion key, and create it if it doesn't exist.
-        // This should only occur when updating from version before v2.10.0.
-        this.settingVersion = this.api.Data.load('settingVersion');
-        if (!this.settingVersion) {
-            this.warn("Key settingVersion not found, creating...");
-            // Initalize it to v0.0.0 if it doesn't exist to tell the migrator to run.
-            this.settingVersion = "0.0.0";
-            this.api.Data.save('settingVersion', this.settingVersion);
-        }
-        this.migrateConfigIfNeeded();
 
         // Ensure all keys exist in settings
         this.ensureDefaultSettings();
 
         this.events = []
-    }
-
-    migrateConfigIfNeeded() {
-        // List of migrations in order
-        const migrations = [
-            /* EXAMPLE MIGRATIONS
-            {
-                from: "1.0.0",
-                to: "1.1.0",
-                migrate: (config) => {
-                    // Example: rename 'oldKey' to 'newKey'
-                    if (config.oldKey) {
-                        config.newKey = config.oldKey;
-                        delete config.oldKey;
-                    }
-                    return config;
-                }
-            },
-            {
-                from: "1.1.0",
-                to: "2.0.0",
-                migrate: (config) => {
-                    // Example: remove 'deprecatedKey'
-                    delete config.deprecatedKey;
-                    return config;
-                }
-            }
-            */
-        ];
-
-        const compareVersions = (a,b) => {
-            const aParts = a.split('.').map(Number);
-            const bParts = b.split('.').map(Number);
-            for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-                const aPart = aParts[i] || 0;
-                const bPart = bParts[i] || 0;
-                if (aPart > bPart) return 1;
-                if (aPart < bPart) return -1;
-            }
-            return 0;
-        }
-
-        let currentVersion = this.settingVersion;
-        let didmigrate = false;
-        for (const { from, to, migrate } of migrations) {
-            if (compareVersions(currentVersion, to) < 0) {
-                this.settings = migrate(this.settings);
-                this.log(`Migrated config from v${from} to v${to}`);
-                currentVersion = to;
-                didmigrate = true;
-            }
-        }
-        if (!didmigrate) this.log('No config migrations needed.');
-
-        // If the current version is less than the current, update to current.
-        if (currentVersion !== config.info.version) {
-            this.settingVersion = config.info.version;
-            this.api.Data.save('settingVersion', this.settingVersion);
-        }
-        this.api.Data.save('settings', this.settings);
     }
 
     ensureDefaultSettings() {
@@ -210,7 +131,7 @@ module.exports = class CallConfirmations {
                         return 0;
                     };
                     if (remoteVersion && compareVersions(remoteVersion, localVersion) > 0) {
-                        this.log(`Update to v${remoteVersion} available.`);
+                        this.api.Logger.info(`Update to v${remoteVersion} available.`);
                         BdApi.UI.showConfirmationModal('CallConfirmations Update',
                             `A new version of CallConfirmations (**v${remoteVersion}**) is available!\n\n` +
                             `You are on **v${localVersion}**. Please see the [changelog](${config.info.github}/blob/main/CHANGELOG.md) for a list of changes.\n\n` +
@@ -218,25 +139,25 @@ module.exports = class CallConfirmations {
                             {
                                 confirmText: 'Update',
                                 onConfirm: () => {
-                                    this.log("Updating plugin...");
+                                    this.api.Logger.info("Updating plugin...");
                                     require('fs').writeFileSync(
                                         require('path').join(BdApi.Plugins.folder, `${config.info.name}.plugin.js`),
                                         request.responseText
                                     );
-                                    this.log("Plugin updated! BetterDiscord will now reload the plugin.");
+                                    this.api.Logger.info("Plugin updated! BetterDiscord will now reload the plugin.");
                                 }
                             }
                         );
                     } else {
-                        this.log("No updates available.");
+                        this.api.Logger.info("No updates available.");
                     }
                 } else {
-                    this.error(`Failed to check for updates. Status: ${request.status}`);
+                    this.api.Logger.error(`Failed to check for updates. Status: ${request.status}`);
                 }
             };
             request.send();
         } catch (e) {
-            this.error('Failed to check for updates:', e);
+            this.api.Logger.error('Failed to check for updates:', e);
         }
     }
 
@@ -304,12 +225,6 @@ module.exports = class CallConfirmations {
             // Add the event listener
             el.addEventListener('click', eventHandler, { capture: true });
         }
-
-        if (links.length === 0) {
-            this.warn("No call buttons found.");
-        } else {
-            this.log(`${this.events.length} button(s) tracked.`);
-        }
     }
 
     // Removes all event handlers
@@ -334,7 +249,6 @@ module.exports = class CallConfirmations {
         else if (document.querySelector('[class*=sidebarList] [aria-label*="(server)"]')) {
             mode = 'server';
         }
-        this.log("Call Type:",mode);
 
         // Generate a new prompt depending on where the button was pressed
         var prompt = "";
@@ -353,7 +267,7 @@ module.exports = class CallConfirmations {
                 prompt = `You are about to join a call in **${loc}**'s VC (**${channelName}**).`;
                 break;
             default:
-                console.log("No prompt is generatable.");
+                this.api.Logger.info("No prompt is generatable.");
                 break;
         }
 
@@ -394,16 +308,14 @@ module.exports = class CallConfirmations {
         this.ensureDefaultSettings();
 
         if (this.settings.core.checkForUpdates) {
-            this.log("Checking for updates...");
+            this.api.Logger.info("Checking for updates...");
             await this.checkForUpdates();
         }
 
-        this.log("Starting plugin...")
         this.startObserver();
     }
 
     stop() {
-        this.log("Stopping plugin...");
         this.stopObserver();
     }
 
@@ -416,7 +328,7 @@ module.exports = class CallConfirmations {
                     try {
                         subSetting.value = this.settings[setting.id][subSetting.id];    
                     } catch (error) {
-                        this.error(error);
+                        this.api.Logger.error(error);
                     }
                 });
             } else {
@@ -441,20 +353,6 @@ module.exports = class CallConfirmations {
                 this.api.Data.save('settings', this.settings);
             },
         });
-    }
-
-    log(...args) {
-        if (this.settings.core.debug) {
-            console.log(`%c[CallConfirmations v${config.info.version}]`, 'color:lightblue;', ...args);
-        }
-    }
-    warn(...args) {
-        if (this.settings.core.debug) {
-            console.warn(`%c[CallConfirmations v${config.info.version}]`, 'color:lightblue;', ...args);
-        }
-    }
-    error(...args) {
-        console.error(`%c[CallConfirmations v${config.info.version}]`, 'color:lightblue;', ...args);
     }
 };
 /*@end@*/

@@ -10,4 +10,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for details on version history.
 
 ## Other Plugins
 Check out my other plugins too!
-- [ChatButtonsBegone](https://github.com/LancersBucket/plugin-RemoveChatButtons)
+- [ChatButtonsBegone](https://github.com/LancersBucket/ChatButtonsBegone)

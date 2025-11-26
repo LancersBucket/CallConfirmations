@@ -1,4 +1,8 @@
 # Changelog
+## v1.0.3
+### Fixed
+- Plugin preventing joining DM's when the DM toggle is enabled
+
 ## v1.0.2
 ### Removed
 - Extraneous debugging

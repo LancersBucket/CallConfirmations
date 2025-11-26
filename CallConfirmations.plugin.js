@@ -4,7 +4,7 @@
  * @description Prevent accidental calls with call confirmations.
  * @author LancersBucket
  * @authorId 355477882082033664
- * @version 1.0.2
+ * @version 1.0.3
  * @source https://github.com/LancersBucket/CallConfirmations
  */
 /*@cc_on
@@ -17,15 +17,7 @@ shell.Popup('It looks like you\'ve mistakenly tried to run me directly. That\'s 
 const config = {
     info: {
         name: 'CallConfirmations',
-        authors: [
-            {
-                name: 'Bucket',
-                discord_id: '355477882082033664',
-                github_username: 'LancersBucket'
-            },
-        ],
-        version: '1.0.2',
-        description: 'Prevent accidental calls with call confirmations.',
+        version: '1.0.3',
         github: 'https://github.com/LancersBucket/CallConfirmations',
         github_raw: 'https://raw.githubusercontent.com/LancersBucket/CallConfirmations/refs/heads/master/CallConfirmations.plugin.js',
     },
@@ -173,8 +165,8 @@ module.exports = class CallConfirmations {
                     if (
                         node.nodeType === 1 && // Element node
                         (
-                            (node.matches && node.matches("[class*='link'][role='button'], [class*='clickable'][role='button'][aria-label*=Call]")) ||
-                            (node.querySelector && node.querySelector("[class*='link'][role='button'], [class*='clickable'][role='button'][aria-label*=Call]"))
+                            (node.matches && node.matches('[class*="link"][role="button"], [class*="clickable"][role="button"][aria-label*=Call]')) ||
+                            (node.querySelector && node.querySelector('[class*="link"][role="button"], [class*="clickable"][role="button"][aria-label*=Call]'))
                         )
                     ) {
                         buttonAdded = true;
@@ -204,7 +196,7 @@ module.exports = class CallConfirmations {
     addLinkEvents() {
         this.events = [];
         // VC channels, and DM/GDM Call + Video Call buttons
-        const links = document.querySelectorAll("[class*='link'][role='button'], [class*='clickable'][role='button'][aria-label*=Call]");
+        const links = document.querySelectorAll("[class*='link'][role='button'], [class*='clickable'][role='button'][aria-label*='Call']");
 
         // Generate new event handler for each channel option
         for (const el of links) {
@@ -240,30 +232,46 @@ module.exports = class CallConfirmations {
         var mode = false
         
         // Get location of the button, either a GDM, DM or Server
-        if (document.querySelector('[class*=title] [class*=hiddenVisually]').textContent == "Group DM") {
-            mode = 'gdm';
+        if (document.querySelector("[class*='title'] [class*='hiddenVisually']").textContent == 'Group DM') {
+            mode = "gdm";
         }
-        else if (document.querySelector('[class*=title] [class*=hiddenVisually]').textContent == "Direct Message") {
-            mode = 'dm';
+        else if (document.querySelector("[class*='title'] [class*='hiddenVisually']").textContent == 'Direct Message') {
+            mode = "dm";
         }
-        else if (document.querySelector('[class*=sidebarList] [aria-label*="(server)"]')) {
-            mode = 'server';
+        else if (document.querySelector("[class*='sidebarList'] [aria-label*='(server)']")) {
+            mode = "server";
         }
 
         // Generate a new prompt depending on where the button was pressed
         var prompt = "";
         switch (mode) {
-            case 'gdm':
-                var loc = document.querySelector('[aria-label*="Edit Group"] [class*="text"]').textContent;
+            case "gdm":
+                try {
+                    var loc = document.querySelector("[aria-label*='Edit Group'] [class*='text']").textContent;
+                } catch (e) {
+                    var loc = 'Group DM';
+                    this.api.Logger.error(`Name of ${loc} could not be found.\n${e}`);
+                }
                 prompt = `You are about to call **${loc}**.`;
                 break;
-            case 'dm':
-                var loc = document.querySelector('[class*=titleWrapper] h1 div').textContent;
+            case "dm":
+                try {
+                    var loc = document.querySelector("[class*='titleWrapper'] h1 span:first-child").textContent;
+                } catch (e) {
+                    var loc = 'Direct Message';
+                    this.api.Logger.error(`Name of ${loc} could not be found.\n${e}`);
+                }
                 prompt = `You are about to call **${loc}**.`;
                 break;
-            case 'server':
-                var loc = document.querySelector('[class*=base] [class*=bar] [class*=title]').textContent;
-                var channelName = element.querySelector('[class*=name]').textContent;
+            case "server":
+                try {
+                    var loc = document.querySelector("[class*='base'] [class*='bar'] [class*='title']").textContent;
+                    var channelName = element.querySelector("[class*='name']").textContent;
+                } catch (e) {
+                    var loc = 'Server';
+                    var channelName = 'Voice Channel';
+                    this.api.Logger.error(`Name of ${loc}/${channelName} could not be found.\n${e}`);
+                }
                 prompt = `You are about to join a call in **${loc}**'s VC (**${channelName}**).`;
                 break;
             default:
@@ -271,27 +279,8 @@ module.exports = class CallConfirmations {
                 break;
         }
 
-        if (mode && this.settings[mode]) {
-            BdApi.UI.showConfirmationModal('Call Confirmation',
-                prompt + ` Are you sure?`,
-                {
-                    confirmText: 'Yes',
-                    onConfirm: () => {
-                        // Redispach the click event to the original element
-                        const clickEvent = new MouseEvent('click', {
-                            bubbles: true,
-                            cancelable: false,
-                            view: window,
-                        });
-                        clickEvent._isCallConfirmation = true;
-                        
-                        // v This can be removed to block calls alltogether
-                        element.dispatchEvent(clickEvent);
-                    }
-                }
-            );
-        } else {
-            // Redispach the click event to the original element
+        const dispatchClickEvent = () => {
+            // Redispatch the click event to the original element
             const clickEvent = new MouseEvent('click', {
                 bubbles: true,
                 cancelable: false,
@@ -299,8 +288,18 @@ module.exports = class CallConfirmations {
             });
             clickEvent._isCallConfirmation = true;
             
-            // v This can be removed to block calls alltogether
             element.dispatchEvent(clickEvent);
+        };
+
+        if (mode && this.settings[mode]) {
+            BdApi.UI.showConfirmationModal('Call Confirmation', `${prompt} Are you sure?`,
+                {
+                    confirmText: 'Yes',
+                    onConfirm: dispatchClickEvent
+                }
+            );
+        } else {
+            dispatchClickEvent();
         }
     }
 
